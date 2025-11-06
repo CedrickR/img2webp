@@ -50,6 +50,66 @@
           </button>
         </div>
       </section>
+      <section class="documentation" aria-labelledby="documentation-title">
+        <div class="documentation__content">
+          <h2 id="documentation-title">Documentation &amp; utilisation</h2>
+          <p>
+            Suivez ces étapes pour préparer vos images avant téléchargement ou
+            export ZIP.
+          </p>
+          <ol class="documentation__steps">
+            <li>
+              Importez jusqu'à 30 images en les déposant sur la zone prévue ou
+              via le bouton «&nbsp;Choisir des fichiers&nbsp;».
+            </li>
+            <li>
+              Ajustez le taux de compression WebP et la réduction en pourcentage
+              pour chaque vignette. Les statistiques se mettent à jour
+              automatiquement.
+            </li>
+            <li>
+              Renommez vos fichiers WebP si nécessaire, puis téléchargez-les
+              individuellement ou récupérez l'ensemble via le bouton ZIP.
+              Vous pouvez retirer une photo de la sélection via le bouton ✕ si
+              nécessaire.
+            </li>
+            <li>
+              Consultez le récapitulatif pour visualiser le gain total avant de
+              finaliser vos téléchargements.
+            </li>
+          </ol>
+          <section class="documentation__tips" aria-label="Astuces">
+            <h3>Astuce</h3>
+            <p>
+              Utilisez des valeurs de compression plus élevées (80&nbsp;% et +)
+              pour conserver la qualité, ou réduisez-les pour privilégier la
+              légèreté des fichiers.
+            </p>
+          </section>
+        </div>
+      </section>
+      <section id="summary" class="summary" aria-live="polite" hidden>
+        <div class="summary__content">
+          <h2>Récapitulatif des conversions</h2>
+          <p class="summary__description">
+            Suivez l'impact de vos réglages sur le poids total et le gain obtenu.
+          </p>
+          <dl class="summary__stats">
+            <div class="summary__row">
+              <dt>Poids original total</dt>
+              <dd class="summary__original">0 o</dd>
+            </div>
+            <div class="summary__row">
+              <dt>Poids WebP total</dt>
+              <dd class="summary__converted">0 o</dd>
+            </div>
+            <div class="summary__row">
+              <dt>Gain total</dt>
+              <dd class="summary__saving">0&nbsp;%</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
       <section id="gallery" class="gallery" aria-live="polite"></section>
       <template id="imageCardTemplate">
         <article class="card">
@@ -60,6 +120,9 @@
             <header class="card__header">
               <h2 class="card__title"></h2>
               <p class="card__meta"></p>
+              <button class="card__remove" type="button" aria-label="Supprimer l'image">
+                ✕
+              </button>
             </header>
             <div class="card__controls">
               <div class="control-group">
@@ -110,6 +173,18 @@
               </div>
             </dl>
             <div class="card__footer">
+              <label class="filename-field">
+                <span class="filename-label">Nom du fichier</span>
+                <div class="filename-input-group">
+                  <input
+                    type="text"
+                    class="filename-input"
+                    maxlength="120"
+                    placeholder="Nom du fichier"
+                  />
+                  <span class="filename-suffix" aria-hidden="true">.webp</span>
+                </div>
+              </label>
               <button class="btn btn--primary download-btn" type="button">
                 Télécharger en WebP
               </button>

@@ -7,8 +7,29 @@ const gallery = document.getElementById('gallery');
 const downloadAllBtn = document.getElementById('downloadAll');
 const resetAllBtn = document.getElementById('resetAll');
 const template = document.getElementById('imageCardTemplate');
+const summarySection = document.getElementById('summary');
+const summaryOriginal = document.querySelector('.summary__original');
+const summaryConverted = document.querySelector('.summary__converted');
+const summarySaving = document.querySelector('.summary__saving');
 
 const imagesState = new Map();
+const INVALID_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
+
+function getFileBaseName(fileName = '') {
+  return fileName.replace(/\.[^.]+$/, '');
+}
+
+function sanitizeFilenameBase(value = '') {
+  return value
+    .replace(INVALID_FILENAME_CHARS, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\.+$/, '');
+}
+
+function ensureWebpExtension(name) {
+  return name.toLowerCase().endsWith('.webp') ? name : `${name}.webp`;
+}
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) {
@@ -44,12 +65,17 @@ function createCard(file, dataUrl) {
   const originalDim = card.querySelector('.original-dimensions');
   const newDim = card.querySelector('.new-dimensions');
   const downloadBtn = card.querySelector('.download-btn');
+  const filenameInput = card.querySelector('.filename-input');
+  const removeBtn = card.querySelector('.card__remove');
+
+  const baseName = getFileBaseName(file.name);
 
   title.textContent = file.name;
   meta.textContent = `Format: ${(file.type || 'image/jpeg').split('/')[1]?.toUpperCase() ?? 'JPG'}`;
   originalSize.textContent = formatBytes(file.size);
   sliderValue.textContent = `${slider.value}%`;
   scaleInput.value = 100;
+  filenameInput.value = baseName;
 
   const cardData = {
     file,
@@ -62,10 +88,15 @@ function createCard(file, dataUrl) {
     originalDim,
     newDim,
     downloadBtn,
+    filenameInput,
+    removeBtn,
+    baseName,
     imageElement: new Image(),
     originalWidth: 0,
     originalHeight: 0,
     convertedDataUrl: dataUrl,
+    originalBytes: file.size,
+    convertedBytes: file.size,
   };
 
   thumbnail.src = dataUrl;
@@ -90,13 +121,23 @@ function createCard(file, dataUrl) {
     debounceUpdate(cardData);
   });
 
+  filenameInput.addEventListener('input', () => {
+    updateDownloadFilename(cardData);
+  });
+
   downloadBtn.addEventListener('click', () => {
     triggerDownload(cardData);
   });
 
+  removeBtn.addEventListener('click', () => {
+    removeCard(cardData);
+  });
+
   imagesState.set(card, cardData);
   gallery.appendChild(card);
+  updateDownloadFilename(cardData);
   refreshGlobalActions();
+  refreshSummary();
 }
 
 function debounce(fn, delay = 180) {
@@ -129,11 +170,16 @@ async function updateConversion(cardData) {
     card,
   } = cardData;
 
+  if (!gallery.contains(card)) {
+    return;
+  }
+
   if (!imageElement.naturalWidth || !imageElement.naturalHeight) {
     return;
   }
 
-  const quality = clamp(Number(slider.value) / 100, 0.01, 1);
+  const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
+  const quality = clamp(qualityPercent / 100, 0.01, 1);
   const scalePercent = clamp(Number(scaleInput.value) || 100, 10, 100);
   const scaleFactor = scalePercent / 100;
 
@@ -153,11 +199,14 @@ async function updateConversion(cardData) {
   newDim.textContent = `${newWidth} × ${newHeight} px`;
   convertedSize.textContent = formatBytes(sizeInBytes);
   downloadBtn.dataset.url = dataUrl;
-  downloadBtn.dataset.filename = `${cardData.file.name.replace(/\.[^.]+$/, '')}_${scalePercent}pct_${slider.value}qual.webp`;
   cardData.convertedDataUrl = dataUrl;
+  cardData.convertedBytes = sizeInBytes;
+  updateDownloadFilename(cardData, { scalePercent, qualityPercent });
+  refreshSummary();
 }
 
 function triggerDownload(cardData) {
+  updateDownloadFilename(cardData);
   const dataUrl = cardData.convertedDataUrl;
   if (!dataUrl) {
     return;
@@ -168,6 +217,29 @@ function triggerDownload(cardData) {
   document.body.appendChild(link);
   link.click();
   requestAnimationFrame(() => document.body.removeChild(link));
+}
+
+function updateDownloadFilename(cardData, options = {}) {
+  const { slider, scaleInput, filenameInput, downloadBtn, baseName } = cardData;
+  const scalePercent = clamp(Number(scaleInput.value) || 100, 10, 100);
+  const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
+  const resolvedScale = options.scalePercent ?? scalePercent;
+  const resolvedQuality = options.qualityPercent ?? qualityPercent;
+
+  const fallbackBase = `${baseName}_${resolvedScale}pct_${resolvedQuality}qual`;
+  const rawInput = filenameInput.value ?? '';
+  const trimmed = rawInput.trim();
+  const withoutExtension = trimmed.toLowerCase().endsWith('.webp')
+    ? trimmed.slice(0, -5)
+    : trimmed;
+  const sanitizedBase = sanitizeFilenameBase(withoutExtension) || sanitizeFilenameBase(fallbackBase);
+  const finalBase = sanitizedBase || 'image-webp';
+  const filename = ensureWebpExtension(finalBase);
+
+  if (downloadBtn?.dataset) {
+    downloadBtn.dataset.filename = filename;
+  }
+  cardData.currentFilename = filename;
 }
 
 async function handleFiles(files) {
@@ -206,6 +278,7 @@ function resetGallery() {
   gallery.innerHTML = '';
   imagesState.clear();
   refreshGlobalActions();
+  refreshSummary();
 }
 
 async function downloadAll() {
@@ -231,6 +304,58 @@ function refreshGlobalActions() {
   const hasImages = imagesState.size > 0;
   downloadAllBtn.disabled = !hasImages;
   resetAllBtn.disabled = !hasImages;
+}
+
+function refreshSummary() {
+  const hasImages = imagesState.size > 0;
+  if (summarySection) {
+    summarySection.hidden = !hasImages;
+  }
+
+  if (!hasImages) {
+    if (summaryOriginal) summaryOriginal.textContent = '0 o';
+    if (summaryConverted) summaryConverted.textContent = '0 o';
+    if (summarySaving) {
+      summarySaving.textContent = '0\u00a0%';
+      summarySaving.classList.remove('summary__saving--negative');
+    }
+    return;
+  }
+
+  let totalOriginal = 0;
+  let totalConverted = 0;
+
+  for (const cardData of imagesState.values()) {
+    totalOriginal += cardData.originalBytes || 0;
+    totalConverted += cardData.convertedBytes || cardData.originalBytes || 0;
+  }
+
+  const gain = totalOriginal
+    ? ((totalOriginal - totalConverted) / totalOriginal) * 100
+    : 0;
+
+  if (summaryOriginal) summaryOriginal.textContent = formatBytes(totalOriginal);
+  if (summaryConverted) summaryConverted.textContent = formatBytes(totalConverted);
+  if (summarySaving) {
+    const absoluteGain = Math.abs(gain);
+    const decimals = absoluteGain >= 10 ? 0 : 1;
+    const prefix = gain > 0 ? '+' : gain < 0 ? '-' : '';
+    const formattedValue = absoluteGain < 0.05
+      ? '0'
+      : absoluteGain.toFixed(decimals);
+    summarySaving.textContent = `${prefix}${formattedValue}\u00a0%`;
+    summarySaving.classList.toggle('summary__saving--negative', gain < 0);
+  }
+}
+
+function removeCard(cardData) {
+  if (!cardData?.card) {
+    return;
+  }
+  imagesState.delete(cardData.card);
+  cardData.card.remove();
+  refreshGlobalActions();
+  refreshSummary();
 }
 
 function preventDefault(e) {
