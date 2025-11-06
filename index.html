@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Convertisseur JPG vers WebP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>Plateforme de conversion JPG vers WebP</h1>
+      <p>
+        Importez vos photos, ajustez le taux de compression et la réduction en
+        pourcentage puis téléchargez-les au format WebP.
+      </p>
+    </header>
+    <main>
+      <section class="importer">
+        <div id="dropZone" class="drop-zone" role="button" tabindex="0">
+          <div class="drop-zone__icon" aria-hidden="true">⬆️</div>
+          <p class="drop-zone__title">Déposez vos images ici</p>
+          <p class="drop-zone__hint">
+            Formats pris en charge&nbsp;: JPG, JPEG, PNG. Maximum 30 fichiers à la fois.
+          </p>
+          <button type="button" class="drop-zone__button">Choisir des fichiers</button>
+          <input
+            id="fileInput"
+            class="drop-zone__input"
+            type="file"
+            accept="image/jpeg,image/jpg,image/png"
+            multiple
+            aria-label="Importer des images"
+          />
+        </div>
+        <div class="actions">
+          <button id="downloadAll" class="btn" type="button" disabled>
+            Télécharger toutes les images (ZIP)
+          </button>
+          <button id="resetAll" class="btn btn--ghost" type="button" disabled>
+            Vider la sélection
+          </button>
+        </div>
+      </section>
+      <section id="gallery" class="gallery" aria-live="polite"></section>
+      <template id="imageCardTemplate">
+        <article class="card">
+          <div class="card__preview">
+            <img class="card__thumbnail" alt="" loading="lazy" />
+          </div>
+          <div class="card__content">
+            <header class="card__header">
+              <h2 class="card__title"></h2>
+              <p class="card__meta"></p>
+            </header>
+            <div class="card__controls">
+              <div class="control-group">
+                <label class="control-label" for="compression">Taux de compression</label>
+                <div class="slider-wrapper">
+                  <input
+                    class="compression-slider"
+                    type="range"
+                    min="1"
+                    max="100"
+                    value="80"
+                  />
+                  <span class="slider-value">80&nbsp;%</span>
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="control-label" for="scale">Réduction</label>
+                <div class="scale-wrapper">
+                  <input
+                    class="scale-input"
+                    type="number"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value="100"
+                    aria-label="Réduction en pourcentage"
+                  />
+                  <span class="scale-suffix">%</span>
+                </div>
+              </div>
+            </div>
+            <dl class="card__stats">
+              <div class="stats-row">
+                <dt>Poids original</dt>
+                <dd class="original-size">-</dd>
+              </div>
+              <div class="stats-row">
+                <dt>Poids WebP</dt>
+                <dd class="converted-size">-</dd>
+              </div>
+              <div class="stats-row">
+                <dt>Taille originale</dt>
+                <dd class="original-dimensions">-</dd>
+              </div>
+              <div class="stats-row">
+                <dt>Nouvelle taille</dt>
+                <dd class="new-dimensions">-</dd>
+              </div>
+            </dl>
+            <div class="card__footer">
+              <label class="filename-field">
+                <span class="filename-label">Nom du fichier</span>
+                <div class="filename-input-group">
+                  <input
+                    type="text"
+                    class="filename-input"
+                    maxlength="120"
+                    placeholder="Nom du fichier"
+                  />
+                  <span class="filename-suffix" aria-hidden="true">.webp</span>
+                </div>
+              </label>
+              <button class="btn btn--primary download-btn" type="button">
+                Télécharger en WebP
+              </button>
+            </div>
+          </div>
+        </article>
+      </template>
+    </main>
+  </body>
+</html>
