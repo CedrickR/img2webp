@@ -18,7 +18,16 @@ Application web statique pour convertir rapidement des images JPG/PNG en WebP to
 
 Ouvrez simplement `index.html` dans un navigateur moderne ou servez le dossier avec `python -m http.server 8000` puis accédez à `http://localhost:8000`.
 
+## Déploiement avec Docker
+
+1. Construire et lancer le service :
+   ```bash
+   docker compose up --build
+   ```
+2. Ouvrir l'application sur `http://localhost:8001`.
+
+Le serveur HTTP interne écoute sur le port `8001`, conformément à la configuration du `Dockerfile` et du `docker-compose.yml`.
+
 ## Documentation intégrée
 
-Un encart « Documentation & utilisation » sur la page principale rappelle les étapes clés (import, réglages, téléchargements)
-et fournit une astuce sur les niveaux de compression pour guider les utilisateurs.
+Un encart « Documentation & utilisation » sur la page principale rappelle les étapes clés (import, réglages, téléchargements) et fournit une astuce sur les niveaux de compression pour guider les utilisateurs.
