@@ -19,8 +19,8 @@
     <header class="site-header">
       <h1>Plateforme de conversion JPG vers WebP</h1>
       <p>
-        Importez vos photos, ajustez le taux de compression et la réduction en
-        pourcentage puis téléchargez-les au format WebP.
+        Importez vos photos, ajustez les curseurs de compression et de
+        réduction en pourcentage puis téléchargez-les au format WebP.
       </p>
     </header>
     <main>
@@ -63,9 +63,9 @@
               via le bouton «&nbsp;Choisir des fichiers&nbsp;».
             </li>
             <li>
-              Ajustez le taux de compression WebP et la réduction en pourcentage
-              pour chaque vignette. Les statistiques se mettent à jour
-              automatiquement.
+              Ajustez les curseurs de compression WebP et de réduction en
+              pourcentage pour chaque vignette. Les statistiques se mettent à
+              jour automatiquement.
             </li>
             <li>
               Renommez vos fichiers WebP si nécessaire, puis téléchargez-les
@@ -135,22 +135,22 @@
                     max="100"
                     value="80"
                   />
-                  <span class="slider-value">80&nbsp;%</span>
+                  <span class="slider-value compression-value">80&nbsp;%</span>
                 </div>
               </div>
               <div class="control-group">
                 <label class="control-label" for="scale">Réduction</label>
-                <div class="scale-wrapper">
+                <div class="slider-wrapper">
                   <input
-                    class="scale-input"
-                    type="number"
+                    class="scale-slider"
+                    type="range"
                     min="10"
                     max="100"
-                    step="5"
+                    step="1"
                     value="100"
                     aria-label="Réduction en pourcentage"
                   />
-                  <span class="scale-suffix">%</span>
+                  <span class="slider-value scale-value">100&nbsp;%</span>
                 </div>
               </div>
             </div>

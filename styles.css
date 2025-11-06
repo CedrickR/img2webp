@@ -375,7 +375,8 @@ main {
   align-items: center;
 }
 
-.compression-slider {
+.compression-slider,
+.scale-slider {
   width: 100%;
   accent-color: var(--accent);
 }
@@ -383,31 +384,6 @@ main {
 .slider-value {
   font-weight: 600;
   color: var(--accent);
-}
-
-.scale-wrapper {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.scale-input {
-  width: 100%;
-  padding: 0.45rem 0.75rem;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  font: inherit;
-  text-align: right;
-}
-
-.scale-input:focus {
-  outline: 2px solid rgba(37, 99, 235, 0.4);
-  outline-offset: 2px;
-}
-
-.scale-suffix {
-  font-weight: 600;
 }
 
 .card__stats {

@@ -58,8 +58,9 @@ function createCard(file, dataUrl) {
   const title = card.querySelector('.card__title');
   const meta = card.querySelector('.card__meta');
   const slider = card.querySelector('.compression-slider');
-  const sliderValue = card.querySelector('.slider-value');
-  const scaleInput = card.querySelector('.scale-input');
+  const compressionValue = card.querySelector('.compression-value') || card.querySelector('.slider-value');
+  const scaleSlider = card.querySelector('.scale-slider');
+  const scaleValue = card.querySelector('.scale-value');
   const originalSize = card.querySelector('.original-size');
   const convertedSize = card.querySelector('.converted-size');
   const originalDim = card.querySelector('.original-dimensions');
@@ -73,16 +74,21 @@ function createCard(file, dataUrl) {
   title.textContent = file.name;
   meta.textContent = `Format: ${(file.type || 'image/jpeg').split('/')[1]?.toUpperCase() ?? 'JPG'}`;
   originalSize.textContent = formatBytes(file.size);
-  sliderValue.textContent = `${slider.value}%`;
-  scaleInput.value = 100;
+  if (compressionValue) {
+    compressionValue.textContent = `${slider.value}%`;
+  }
+  if (scaleValue) {
+    scaleValue.textContent = `${scaleSlider.value}%`;
+  }
   filenameInput.value = baseName;
 
   const cardData = {
     file,
     card,
     slider,
-    sliderValue,
-    scaleInput,
+    compressionValue,
+    scaleSlider,
+    scaleValue,
     originalSize,
     convertedSize,
     originalDim,
@@ -111,13 +117,18 @@ function createCard(file, dataUrl) {
   cardData.imageElement.src = dataUrl;
 
   slider.addEventListener('input', () => {
-    sliderValue.textContent = `${slider.value}%`;
+    if (compressionValue) {
+      compressionValue.textContent = `${slider.value}%`;
+    }
     debounceUpdate(cardData);
   });
 
-  scaleInput.addEventListener('input', () => {
-    const sanitized = clamp(Number(scaleInput.value) || 100, 10, 100);
-    scaleInput.value = sanitized;
+  scaleSlider.addEventListener('input', () => {
+    const sanitized = clamp(Number(scaleSlider.value) || 100, 10, 100);
+    scaleSlider.value = sanitized;
+    if (scaleValue) {
+      scaleValue.textContent = `${sanitized}%`;
+    }
     debounceUpdate(cardData);
   });
 
@@ -163,7 +174,7 @@ async function updateConversion(cardData) {
   const {
     imageElement,
     slider,
-    scaleInput,
+    scaleSlider,
     convertedSize,
     newDim,
     downloadBtn,
@@ -180,7 +191,7 @@ async function updateConversion(cardData) {
 
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
   const quality = clamp(qualityPercent / 100, 0.01, 1);
-  const scalePercent = clamp(Number(scaleInput.value) || 100, 10, 100);
+  const scalePercent = clamp(Number(scaleSlider.value) || 100, 10, 100);
   const scaleFactor = scalePercent / 100;
 
   const newWidth = Math.round(imageElement.naturalWidth * scaleFactor);
@@ -220,8 +231,8 @@ function triggerDownload(cardData) {
 }
 
 function updateDownloadFilename(cardData, options = {}) {
-  const { slider, scaleInput, filenameInput, downloadBtn, baseName } = cardData;
-  const scalePercent = clamp(Number(scaleInput.value) || 100, 10, 100);
+  const { slider, scaleSlider, filenameInput, downloadBtn, baseName } = cardData;
+  const scalePercent = clamp(Number(scaleSlider.value) || 100, 10, 100);
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
   const resolvedScale = options.scalePercent ?? scalePercent;
   const resolvedQuality = options.qualityPercent ?? qualityPercent;

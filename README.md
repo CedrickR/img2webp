@@ -6,7 +6,7 @@ Application web statique pour convertir rapidement des images JPG/PNG en WebP to
 
 - Import multiple d'images (glisser-déposer ou sélection de fichiers).
 - Ajustement individuel du taux de compression WebP via un curseur.
-- Réduction en pourcentage avec calcul automatique des nouvelles dimensions.
+- Réduction en pourcentage via un curseur dédié avec calcul automatique des nouvelles dimensions.
 - Affichage du poids original et estimé après conversion.
 - Téléchargement de chaque image convertie ou de l'ensemble en archive ZIP.
 - Champ de renommage pour définir le nom des fichiers WebP avant téléchargement.
