@@ -345,21 +345,30 @@ async function downloadAll() {
   if (imagesState.size === 0) {
     return;
   }
-  const zip = new JSZip();
+
   let index = 1;
   for (const cardData of imagesState.values()) {
     await updateConversion(cardData);
     const dataUrl = cardData.convertedDataUrl;
-    if (!dataUrl) continue;
-    const base64 = dataUrl.split(',')[1];
+    if (!dataUrl) {
+      continue;
+    }
+
     const fallbackFormat = resolveOutputFormat(cardData.outputFormat);
     const fallbackExtension = OUTPUT_FORMATS[fallbackFormat].extension;
-    const filename = cardData.downloadBtn?.dataset?.filename || `${cardData.file.name.replace(/\.[^.]+$/, '')}_${index}.${fallbackExtension}`;
-    zip.file(filename, base64, { base64: true });
+    const filename = cardData.downloadBtn?.dataset?.filename
+      || `${cardData.file.name.replace(/\.[^.]+$/, '')}_${index}.${fallbackExtension}`;
+
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     index += 1;
+    await new Promise((resolve) => setTimeout(resolve, 120));
   }
-  const blob = await zip.generateAsync({ type: 'blob' });
-  saveAs(blob, 'images-converted.zip');
 }
 
 function refreshGlobalActions() {

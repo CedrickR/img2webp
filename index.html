@@ -3,16 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Convertisseur JPG vers WebP</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <title>Convertisseur d'images</title>
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -20,7 +12,7 @@
       <h1>Plateforme de conversion JPG vers WebP</h1>
       <p>
         Importez vos photos, ajustez les curseurs de compression et de
-        réduction en pourcentage puis téléchargez-les au format WebP.
+        réduction en pourcentage puis téléchargez-les au format WebP, JPG ou PNG.
       </p>
     </header>
     <main>
@@ -43,7 +35,7 @@
         </div>
         <div class="actions">
           <button id="downloadAll" class="btn" type="button" disabled>
-            Télécharger toutes les images (ZIP)
+            Télécharger toutes les images
           </button>
           <button id="resetAll" class="btn btn--ghost" type="button" disabled>
             Vider la sélection
@@ -55,7 +47,7 @@
           <h2 id="documentation-title">Documentation &amp; utilisation</h2>
           <p>
             Suivez ces étapes pour préparer vos images avant téléchargement ou
-            export ZIP.
+            export groupé.
           </p>
           <ol class="documentation__steps">
             <li>
@@ -63,13 +55,13 @@
               via le bouton «&nbsp;Choisir des fichiers&nbsp;».
             </li>
             <li>
-              Ajustez les curseurs de compression WebP et de réduction en
+              Ajustez les curseurs de compression et de réduction en
               pourcentage pour chaque vignette. Les statistiques se mettent à
               jour automatiquement.
             </li>
             <li>
-              Renommez vos fichiers WebP si nécessaire, puis téléchargez-les
-              individuellement ou récupérez l'ensemble via le bouton ZIP.
+              Renommez vos fichiers si nécessaire, puis téléchargez-les
+              individuellement ou récupérez l'ensemble via le bouton de téléchargement global.
               Vous pouvez retirer une photo de la sélection via le bouton ✕ si
               nécessaire.
             </li>
