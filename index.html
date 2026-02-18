@@ -4,8 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Convertisseur d'images</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="app.js" defer></script>
+    <script>
+      (function loadLocalAssets() {
+        const base = window.location.href.endsWith('/')
+          ? window.location.href
+          : `${window.location.href}/`;
+
+        const stylesheet = document.createElement('link');
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = new URL('styles.css', base).toString();
+        document.head.appendChild(stylesheet);
+
+        const script = document.createElement('script');
+        script.src = new URL('app.js', base).toString();
+        script.defer = true;
+        document.head.appendChild(script);
+      })();
+    </script>
   </head>
   <body>
     <header class="site-header">
