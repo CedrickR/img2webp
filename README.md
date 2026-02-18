@@ -9,7 +9,7 @@ Application web statique pour convertir rapidement des images JPG/PNG vers WebP,
 - Réduction en pourcentage via un curseur dédié avec calcul automatique des nouvelles dimensions.
 - Affichage du poids original et estimé après conversion.
 - Choix du format de sortie (WebP, JPG ou PNG) pour chaque image.
-- Téléchargement de chaque image convertie ou de l'ensemble en archive ZIP.
+- Téléchargement de chaque image convertie ou de l'ensemble en lot (un fichier après l'autre).
 - Champ de renommage avec extension automatiquement adaptée au format choisi.
 - Récapitulatif dynamique des poids cumulés et du pourcentage de gain total.
 - Suppression d'une image à la volée depuis sa vignette.
@@ -32,3 +32,7 @@ Le serveur HTTP interne écoute sur le port `8001`, conformément à la configur
 ## Documentation intégrée
 
 Un encart « Documentation & utilisation » sur la page principale rappelle les étapes clés (import, réglages, téléchargements) et fournit une astuce sur les niveaux de compression pour guider les utilisateurs.
+
+## Compatibilité proxy
+
+L'interface ne dépend plus de ressources externes (CDN/fonts tiers). L'affichage (CSS) et le JavaScript applicatif sont servis localement depuis le projet, ce qui facilite le passage via des proxys restrictifs.
