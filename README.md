@@ -1,15 +1,16 @@
 # img2webp
 
-Application web statique pour convertir rapidement des images JPG/PNG en WebP tout en ajustant la compression et la réduction de taille.
+Application web statique pour convertir rapidement des images JPG/PNG vers WebP, JPG ou PNG tout en ajustant la compression et la réduction de taille.
 
 ## Fonctionnalités
 
 - Import multiple d'images (glisser-déposer ou sélection de fichiers).
-- Ajustement individuel du taux de compression WebP via un curseur.
+- Ajustement individuel du taux de compression via un curseur (WebP/JPG).
 - Réduction en pourcentage via un curseur dédié avec calcul automatique des nouvelles dimensions.
 - Affichage du poids original et estimé après conversion.
+- Choix du format de sortie (WebP, JPG ou PNG) pour chaque image.
 - Téléchargement de chaque image convertie ou de l'ensemble en archive ZIP.
-- Champ de renommage pour définir le nom des fichiers WebP avant téléchargement.
+- Champ de renommage avec extension automatiquement adaptée au format choisi.
 - Récapitulatif dynamique des poids cumulés et du pourcentage de gain total.
 - Suppression d'une image à la volée depuis sa vignette.
 - Espace de documentation intégré détaillant le flux d'utilisation et les bonnes pratiques.
