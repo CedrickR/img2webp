@@ -27,8 +27,18 @@ function sanitizeFilenameBase(value = '') {
     .replace(/\.+$/, '');
 }
 
-function ensureWebpExtension(name) {
-  return name.toLowerCase().endsWith('.webp') ? name : `${name}.webp`;
+const OUTPUT_FORMATS = {
+  webp: { mimeType: 'image/webp', extension: 'webp', label: 'WebP' },
+  jpg: { mimeType: 'image/jpeg', extension: 'jpg', label: 'JPG' },
+  png: { mimeType: 'image/png', extension: 'png', label: 'PNG' },
+};
+
+function resolveOutputFormat(format) {
+  return OUTPUT_FORMATS[format] ? format : 'webp';
+}
+
+function ensureFileExtension(name, extension) {
+  return name.toLowerCase().endsWith(`.${extension}`) ? name : `${name}.${extension}`;
 }
 
 function formatBytes(bytes) {
@@ -68,6 +78,8 @@ function createCard(file, dataUrl) {
   const downloadBtn = card.querySelector('.download-btn');
   const filenameInput = card.querySelector('.filename-input');
   const removeBtn = card.querySelector('.card__remove');
+  const outputFormatSelect = card.querySelector('.output-format-select');
+  const filenameSuffix = card.querySelector('.filename-suffix');
 
   const baseName = getFileBaseName(file.name);
 
@@ -96,6 +108,8 @@ function createCard(file, dataUrl) {
     downloadBtn,
     filenameInput,
     removeBtn,
+    outputFormatSelect,
+    filenameSuffix,
     baseName,
     imageElement: new Image(),
     originalWidth: 0,
@@ -103,6 +117,7 @@ function createCard(file, dataUrl) {
     convertedDataUrl: dataUrl,
     originalBytes: file.size,
     convertedBytes: file.size,
+    outputFormat: 'webp',
   };
 
   thumbnail.src = dataUrl;
@@ -134,6 +149,12 @@ function createCard(file, dataUrl) {
 
   filenameInput.addEventListener('input', () => {
     updateDownloadFilename(cardData);
+  });
+
+  outputFormatSelect.addEventListener('change', () => {
+    cardData.outputFormat = resolveOutputFormat(outputFormatSelect.value);
+    updateDownloadFilename(cardData);
+    updateConversion(cardData);
   });
 
   downloadBtn.addEventListener('click', () => {
@@ -179,6 +200,7 @@ async function updateConversion(cardData) {
     newDim,
     downloadBtn,
     card,
+    outputFormat,
   } = cardData;
 
   if (!gallery.contains(card)) {
@@ -203,7 +225,12 @@ async function updateConversion(cardData) {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
 
-  const dataUrl = canvas.toDataURL('image/webp', quality);
+  const resolvedOutputFormat = resolveOutputFormat(outputFormat);
+  const outputConfig = OUTPUT_FORMATS[resolvedOutputFormat];
+  const useQuality = outputConfig.mimeType !== 'image/png';
+  const dataUrl = useQuality
+    ? canvas.toDataURL(outputConfig.mimeType, quality)
+    : canvas.toDataURL(outputConfig.mimeType);
   const sizeInBytes = getDataUrlSize(dataUrl);
 
   card.querySelector('.card__thumbnail').src = dataUrl;
@@ -224,31 +251,53 @@ function triggerDownload(cardData) {
   }
   const link = document.createElement('a');
   link.href = dataUrl;
-  link.download = cardData.downloadBtn?.dataset?.filename || `${cardData.file.name}.webp`;
+  const fallbackFormat = resolveOutputFormat(cardData.outputFormat);
+  const fallbackExtension = OUTPUT_FORMATS[fallbackFormat].extension;
+  link.download = cardData.downloadBtn?.dataset?.filename || `${cardData.file.name}.${fallbackExtension}`;
   document.body.appendChild(link);
   link.click();
   requestAnimationFrame(() => document.body.removeChild(link));
 }
 
 function updateDownloadFilename(cardData, options = {}) {
-  const { slider, scaleSlider, filenameInput, downloadBtn, baseName } = cardData;
+  const {
+    slider,
+    scaleSlider,
+    filenameInput,
+    downloadBtn,
+    baseName,
+    outputFormatSelect,
+    filenameSuffix,
+  } = cardData;
   const scalePercent = clamp(Number(scaleSlider.value) || 100, 10, 100);
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
   const resolvedScale = options.scalePercent ?? scalePercent;
   const resolvedQuality = options.qualityPercent ?? qualityPercent;
 
+  const selectedFormat = resolveOutputFormat(outputFormatSelect?.value || cardData.outputFormat);
+  cardData.outputFormat = selectedFormat;
+  const outputConfig = OUTPUT_FORMATS[selectedFormat];
+
   const fallbackBase = `${baseName}_${resolvedScale}pct_${resolvedQuality}qual`;
   const rawInput = filenameInput.value ?? '';
   const trimmed = rawInput.trim();
-  const withoutExtension = trimmed.toLowerCase().endsWith('.webp')
-    ? trimmed.slice(0, -5)
-    : trimmed;
+  const knownExtensions = Object.values(OUTPUT_FORMATS).map((format) => format.extension);
+  const withoutExtension = knownExtensions.reduce((value, extension) => {
+    const suffix = `.${extension}`;
+    return value.toLowerCase().endsWith(suffix) ? value.slice(0, -suffix.length) : value;
+  }, trimmed);
   const sanitizedBase = sanitizeFilenameBase(withoutExtension) || sanitizeFilenameBase(fallbackBase);
-  const finalBase = sanitizedBase || 'image-webp';
-  const filename = ensureWebpExtension(finalBase);
+  const finalBase = sanitizedBase || 'image-converted';
+  const filename = ensureFileExtension(finalBase, outputConfig.extension);
 
   if (downloadBtn?.dataset) {
     downloadBtn.dataset.filename = filename;
+  }
+  if (filenameSuffix) {
+    filenameSuffix.textContent = `.${outputConfig.extension}`;
+  }
+  if (downloadBtn) {
+    downloadBtn.textContent = `Télécharger en ${outputConfig.label}`;
   }
   cardData.currentFilename = filename;
 }
@@ -303,12 +352,14 @@ async function downloadAll() {
     const dataUrl = cardData.convertedDataUrl;
     if (!dataUrl) continue;
     const base64 = dataUrl.split(',')[1];
-    const filename = cardData.downloadBtn?.dataset?.filename || `${cardData.file.name.replace(/\.[^.]+$/, '')}_${index}.webp`;
+    const fallbackFormat = resolveOutputFormat(cardData.outputFormat);
+    const fallbackExtension = OUTPUT_FORMATS[fallbackFormat].extension;
+    const filename = cardData.downloadBtn?.dataset?.filename || `${cardData.file.name.replace(/\.[^.]+$/, '')}_${index}.${fallbackExtension}`;
     zip.file(filename, base64, { base64: true });
     index += 1;
   }
   const blob = await zip.generateAsync({ type: 'blob' });
-  saveAs(blob, 'images-webp.zip');
+  saveAs(blob, 'images-converted.zip');
 }
 
 function refreshGlobalActions() {
