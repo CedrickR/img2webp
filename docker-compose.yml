@@ -3,8 +3,39 @@ version: "3.9"
 services:
   img2webp:
     build: .
-    ports:
-      - "8001:8001"
+    expose:
+      - "8001"
     volumes:
       - .:/app:ro
     restart: unless-stopped
+    networks:
+      - n8n_net
+    labels:
+      # Activation Traefik
+      - "traefik.enable=true"
+      
+      # Router HTTPS sur /img2webp
+      - "traefik.http.routers.img2webp.rule=Host(`frhb96556flex.ikexpress.com`) && PathPrefix(`/img2webp`)"
+      - "traefik.http.routers.img2webp.entrypoints=websecure"
+      - "traefik.http.routers.img2webp.tls=true"
+      - "traefik.http.routers.img2webp.tls.certresolver=letsencrypt"
+      
+      # Service (port interne)
+      - "traefik.http.services.img2webp.loadbalancer.server.port=8001"
+      
+      # Middleware : strip /img2webp avant transmission au service
+      - "traefik.http.routers.img2webp.middlewares=img2webp-strip,img2webp-headers"
+      - "traefik.http.middlewares.img2webp-strip.stripprefix.prefixes=/img2webp"
+      
+      # Headers de sécurité
+      - "traefik.http.middlewares.img2webp-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.img2webp-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.img2webp-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.img2webp-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.img2webp-headers.headers.browserXssFilter=true"
+
+# Utilise le réseau existant créé par le stack n8n
+networks:
+  n8n_net:
+    external: true
+    name: n8n_net
