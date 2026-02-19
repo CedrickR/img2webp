@@ -14,6 +14,148 @@ const summarySaving = document.querySelector('.summary__saving');
 
 const imagesState = new Map();
 const INVALID_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
+const CSS_COLOR_TEST_ELEMENT = document.createElement('span');
+
+function normalizeBackgroundColor(value = '') {
+  const raw = value.trim();
+  if (!raw) {
+    return 'transparent';
+  }
+
+  if (/^transparent$/i.test(raw)) {
+    return 'transparent';
+  }
+
+  const isShorthandHex = /^#([\da-f]{3}|[\da-f]{4})$/i.test(raw);
+  const isFullHex = /^#([\da-f]{6}|[\da-f]{8})$/i.test(raw);
+
+  if (isShorthandHex || isFullHex) {
+    return raw.toLowerCase();
+  }
+
+  CSS_COLOR_TEST_ELEMENT.style.color = '';
+  CSS_COLOR_TEST_ELEMENT.style.color = raw;
+  if (!CSS_COLOR_TEST_ELEMENT.style.color) {
+    return null;
+  }
+
+  return raw.toLowerCase();
+}
+
+
+function colorDistanceSquared(r1, g1, b1, r2, g2, b2) {
+  const dr = r1 - r2;
+  const dg = g1 - g2;
+  const db = b1 - b2;
+  return dr * dr + dg * dg + db * db;
+}
+
+function getBorderReferenceColor(imageData) {
+  const { data, width, height } = imageData;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+
+  const sampleStep = Math.max(1, Math.floor(Math.min(width, height) / 60));
+
+  for (let x = 0; x < width; x += sampleStep) {
+    let top = (x * 4);
+    let bottom = ((height - 1) * width + x) * 4;
+    if (data[top + 3] > 0) {
+      r += data[top];
+      g += data[top + 1];
+      b += data[top + 2];
+      count += 1;
+    }
+    if (data[bottom + 3] > 0) {
+      r += data[bottom];
+      g += data[bottom + 1];
+      b += data[bottom + 2];
+      count += 1;
+    }
+  }
+
+  for (let y = 0; y < height; y += sampleStep) {
+    let left = (y * width) * 4;
+    let right = (y * width + (width - 1)) * 4;
+    if (data[left + 3] > 0) {
+      r += data[left];
+      g += data[left + 1];
+      b += data[left + 2];
+      count += 1;
+    }
+    if (data[right + 3] > 0) {
+      r += data[right];
+      g += data[right + 1];
+      b += data[right + 2];
+      count += 1;
+    }
+  }
+
+  if (!count) {
+    return { r: 255, g: 255, b: 255 };
+  }
+
+  return {
+    r: Math.round(r / count),
+    g: Math.round(g / count),
+    b: Math.round(b / count),
+  };
+}
+
+function removeBackgroundLikeBgremove(imageData, tolerance = 45) {
+  const { data, width, height } = imageData;
+  const reference = getBorderReferenceColor(imageData);
+  const threshold = Math.max(10, Math.min(160, tolerance));
+  const thresholdSquared = threshold * threshold;
+  const visited = new Uint8Array(width * height);
+  const queue = new Uint32Array(width * height);
+  let head = 0;
+  let tail = 0;
+
+  const enqueue = (x, y) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const idx = y * width + x;
+    if (visited[idx]) return;
+    const i = idx * 4;
+    if (data[i + 3] === 0) {
+      visited[idx] = 1;
+      return;
+    }
+
+    const dist = colorDistanceSquared(data[i], data[i + 1], data[i + 2], reference.r, reference.g, reference.b);
+    if (dist <= thresholdSquared) {
+      visited[idx] = 1;
+      queue[tail++] = idx;
+    }
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    enqueue(x, 0);
+    enqueue(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    enqueue(0, y);
+    enqueue(width - 1, y);
+  }
+
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % width;
+    const y = Math.floor(idx / width);
+
+    const alphaIndex = idx * 4 + 3;
+    data[alphaIndex] = 0;
+
+    enqueue(x + 1, y);
+    enqueue(x - 1, y);
+    enqueue(x, y + 1);
+    enqueue(x, y - 1);
+  }
+
+  return imageData;
+}
 
 function getFileBaseName(fileName = '') {
   return fileName.replace(/\.[^.]+$/, '');
@@ -80,6 +222,11 @@ function createCard(file, dataUrl) {
   const removeBtn = card.querySelector('.card__remove');
   const outputFormatSelect = card.querySelector('.output-format-select');
   const filenameSuffix = card.querySelector('.filename-suffix');
+  const backgroundColorInput = card.querySelector('.background-color-input');
+  const backgroundColorPicker = card.querySelector('.background-color-picker');
+  const backgroundRemoveCheckbox = card.querySelector('.background-remove-checkbox');
+  const backgroundToleranceSlider = card.querySelector('.background-tolerance-slider');
+  const backgroundToleranceValue = card.querySelector('.background-tolerance-value');
 
   const baseName = getFileBaseName(file.name);
 
@@ -91,6 +238,9 @@ function createCard(file, dataUrl) {
   }
   if (scaleValue) {
     scaleValue.textContent = `${scaleSlider.value}%`;
+  }
+  if (backgroundToleranceValue) {
+    backgroundToleranceValue.textContent = backgroundToleranceSlider.value;
   }
   filenameInput.value = baseName;
 
@@ -110,6 +260,11 @@ function createCard(file, dataUrl) {
     removeBtn,
     outputFormatSelect,
     filenameSuffix,
+    backgroundColorInput,
+    backgroundColorPicker,
+    backgroundRemoveCheckbox,
+    backgroundToleranceSlider,
+    backgroundToleranceValue,
     baseName,
     imageElement: new Image(),
     originalWidth: 0,
@@ -118,6 +273,9 @@ function createCard(file, dataUrl) {
     originalBytes: file.size,
     convertedBytes: file.size,
     outputFormat: 'webp',
+    backgroundColor: 'transparent',
+    backgroundRemovalEnabled: false,
+    backgroundTolerance: 45,
   };
 
   thumbnail.src = dataUrl;
@@ -155,6 +313,44 @@ function createCard(file, dataUrl) {
     cardData.outputFormat = resolveOutputFormat(outputFormatSelect.value);
     updateDownloadFilename(cardData);
     updateConversion(cardData);
+  });
+
+  backgroundColorInput.addEventListener('input', () => {
+    const normalized = normalizeBackgroundColor(backgroundColorInput.value);
+    if (!normalized) {
+      backgroundColorInput.classList.add('is-invalid');
+      return;
+    }
+
+    backgroundColorInput.classList.remove('is-invalid');
+    cardData.backgroundColor = normalized;
+    if (/^#([\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(normalized)) {
+      backgroundColorPicker.value = normalized;
+    }
+    debounceUpdate(cardData);
+  });
+
+  backgroundColorPicker.addEventListener('input', () => {
+    const normalized = normalizeBackgroundColor(backgroundColorPicker.value);
+    cardData.backgroundColor = normalized || '#ffffff';
+    backgroundColorInput.value = cardData.backgroundColor;
+    backgroundColorInput.classList.remove('is-invalid');
+    debounceUpdate(cardData);
+  });
+
+  backgroundRemoveCheckbox.addEventListener('change', () => {
+    cardData.backgroundRemovalEnabled = backgroundRemoveCheckbox.checked;
+    debounceUpdate(cardData);
+  });
+
+  backgroundToleranceSlider.addEventListener('input', () => {
+    const tolerance = clamp(Number(backgroundToleranceSlider.value) || 45, 10, 160);
+    backgroundToleranceSlider.value = tolerance;
+    cardData.backgroundTolerance = tolerance;
+    if (backgroundToleranceValue) {
+      backgroundToleranceValue.textContent = `${tolerance}`;
+    }
+    debounceUpdate(cardData);
   });
 
   downloadBtn.addEventListener('click', () => {
@@ -201,6 +397,9 @@ async function updateConversion(cardData) {
     downloadBtn,
     card,
     outputFormat,
+    backgroundColor,
+    backgroundRemovalEnabled,
+    backgroundTolerance,
   } = cardData;
 
   if (!gallery.contains(card)) {
@@ -219,11 +418,26 @@ async function updateConversion(cardData) {
   const newWidth = Math.round(imageElement.naturalWidth * scaleFactor);
   const newHeight = Math.round(imageElement.naturalHeight * scaleFactor);
 
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = Math.max(newWidth, 1);
+  sourceCanvas.height = Math.max(newHeight, 1);
+  const sourceCtx = sourceCanvas.getContext('2d');
+  sourceCtx.drawImage(imageElement, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+  let processedImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+  if (backgroundRemovalEnabled) {
+    processedImageData = removeBackgroundLikeBgremove(processedImageData, backgroundTolerance);
+  }
+
   const canvas = document.createElement('canvas');
-  canvas.width = Math.max(newWidth, 1);
-  canvas.height = Math.max(newHeight, 1);
+  canvas.width = sourceCanvas.width;
+  canvas.height = sourceCanvas.height;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
+  if (backgroundColor && backgroundColor !== 'transparent') {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  ctx.putImageData(processedImageData, 0, 0);
 
   const resolvedOutputFormat = resolveOutputFormat(outputFormat);
   const outputConfig = OUTPUT_FORMATS[resolvedOutputFormat];

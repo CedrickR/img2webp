@@ -160,6 +160,47 @@
                   <span class="slider-value scale-value">100&nbsp;%</span>
                 </div>
               </div>
+              <div class="control-group">
+                <label class="control-label">Fond (type bgremove)</label>
+                <label class="background-remove-toggle">
+                  <input
+                    class="background-remove-checkbox"
+                    type="checkbox"
+                    aria-label="Activer la suppression du fond"
+                  />
+                  <span>Supprimer automatiquement le fond</span>
+                </label>
+                <div class="background-tolerance-control">
+                  <span class="background-tolerance-label">Tolérance</span>
+                  <div class="slider-wrapper">
+                    <input
+                      class="background-tolerance-slider"
+                      type="range"
+                      min="10"
+                      max="160"
+                      step="1"
+                      value="45"
+                      aria-label="Tolérance de suppression de fond"
+                    />
+                    <span class="slider-value background-tolerance-value">45</span>
+                  </div>
+                </div>
+                <div class="background-color-control">
+                  <input
+                    class="background-color-picker"
+                    type="color"
+                    value="#ffffff"
+                    aria-label="Sélecteur de couleur de fond"
+                  />
+                  <input
+                    class="background-color-input"
+                    type="text"
+                    value="transparent"
+                    placeholder="transparent, #ffffff, red"
+                    aria-label="Couleur de fond en hexadécimal ou nom web"
+                  />
+                </div>
+              </div>
             </div>
             <dl class="card__stats">
               <div class="stats-row">

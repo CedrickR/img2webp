@@ -477,6 +477,72 @@ main {
   outline-offset: 1px;
 }
 
+
+.background-remove-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+  font-size: 0.93rem;
+}
+
+.background-remove-checkbox {
+  accent-color: var(--accent);
+}
+
+.background-tolerance-control {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.background-tolerance-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.background-tolerance-slider {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.background-color-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.background-color-picker {
+  width: 2.75rem;
+  height: 2.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  padding: 0.1rem;
+  cursor: pointer;
+}
+
+.background-color-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.02);
+  color: var(--text);
+  font-size: 0.95rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.background-color-input:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.6);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.background-color-input.is-invalid {
+  border-color: #dc2626;
+}
+
 .card__footer {
   display: flex;
   flex-direction: column;
