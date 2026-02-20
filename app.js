@@ -337,6 +337,8 @@ function createCard(file, dataUrl) {
     cropEnabled: false,
     cropRect: { x: 0, y: 0, width: 1, height: 1 },
     cropPointerSession: null,
+    skipAutoUpdateOnImageLoad: false,
+    renderCropSelection: null,
   };
 
   thumbnail.src = dataUrl;
@@ -346,6 +348,12 @@ function createCard(file, dataUrl) {
     cardData.originalWidth = cardData.imageElement.naturalWidth;
     cardData.originalHeight = cardData.imageElement.naturalHeight;
     originalDim.textContent = `${cardData.originalWidth} × ${cardData.originalHeight} px`;
+
+    if (cardData.skipAutoUpdateOnImageLoad) {
+      cardData.skipAutoUpdateOnImageLoad = false;
+      return;
+    }
+
     updateConversion(cardData);
   });
   cardData.imageElement.src = dataUrl;
@@ -459,6 +467,7 @@ function createCard(file, dataUrl) {
   }
 
   cardData.thumbnail = thumbnail;
+  cardData.renderCropSelection = renderCropSelection;
   renderCropSelection();
 
   slider.addEventListener('input', () => {
@@ -719,6 +728,14 @@ async function updateConversion(cardData) {
   const sizeInBytes = getDataUrlSize(dataUrl);
 
   card.querySelector('.card__thumbnail').src = dataUrl;
+
+  if (cropEnabled) {
+    cardData.cropRect = { x: 0, y: 0, width: 1, height: 1 };
+    cardData.renderCropSelection?.();
+    cardData.skipAutoUpdateOnImageLoad = true;
+    cardData.imageElement.src = dataUrl;
+  }
+
   newDim.textContent = `${newWidth} × ${newHeight} px`;
   convertedSize.textContent = formatBytes(sizeInBytes);
   downloadBtn.dataset.url = dataUrl;
