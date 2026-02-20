@@ -203,6 +203,34 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function parsePositiveInteger(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function computeResizedDimensions(originalWidth, originalHeight, scalePercent, maxWidth = null, maxHeight = null) {
+  const baseWidth = Math.max(Math.round(originalWidth * (scalePercent / 100)), 1);
+  const baseHeight = Math.max(Math.round(originalHeight * (scalePercent / 100)), 1);
+
+  let ratio = 1;
+  if (maxWidth) {
+    ratio = Math.min(ratio, maxWidth / baseWidth);
+  }
+  if (maxHeight) {
+    ratio = Math.min(ratio, maxHeight / baseHeight);
+  }
+
+  ratio = Math.min(1, ratio);
+
+  return {
+    width: Math.max(1, Math.round(baseWidth * ratio)),
+    height: Math.max(1, Math.round(baseHeight * ratio)),
+  };
+}
+
 function createCard(file, dataUrl) {
   const { content } = template;
   const card = content.firstElementChild.cloneNode(true);
@@ -217,6 +245,8 @@ function createCard(file, dataUrl) {
   const convertedSize = card.querySelector('.converted-size');
   const originalDim = card.querySelector('.original-dimensions');
   const newDim = card.querySelector('.new-dimensions');
+  const resizeWidthInput = card.querySelector('.resize-width-input');
+  const resizeHeightInput = card.querySelector('.resize-height-input');
   const downloadBtn = card.querySelector('.download-btn');
   const filenameInput = card.querySelector('.filename-input');
   const removeBtn = card.querySelector('.card__remove');
@@ -255,6 +285,8 @@ function createCard(file, dataUrl) {
     convertedSize,
     originalDim,
     newDim,
+    resizeWidthInput,
+    resizeHeightInput,
     downloadBtn,
     filenameInput,
     removeBtn,
@@ -276,6 +308,8 @@ function createCard(file, dataUrl) {
     backgroundColor: 'transparent',
     backgroundRemovalEnabled: false,
     backgroundTolerance: 45,
+    maxWidth: null,
+    maxHeight: null,
   };
 
   thumbnail.src = dataUrl;
@@ -303,6 +337,34 @@ function createCard(file, dataUrl) {
       scaleValue.textContent = `${sanitized}%`;
     }
     debounceUpdate(cardData);
+  });
+
+  const updateResizeConstraint = (field, input) => {
+    const parsed = parsePositiveInteger(input.value);
+    if (input.value.trim() === '') {
+      cardData[field] = null;
+      input.classList.remove('is-invalid');
+      debounceUpdate(cardData);
+      return;
+    }
+
+    if (parsed) {
+      cardData[field] = parsed;
+      input.value = String(parsed);
+      input.classList.remove('is-invalid');
+      debounceUpdate(cardData);
+      return;
+    }
+
+    input.classList.add('is-invalid');
+  };
+
+  resizeWidthInput.addEventListener('input', () => {
+    updateResizeConstraint('maxWidth', resizeWidthInput);
+  });
+
+  resizeHeightInput.addEventListener('input', () => {
+    updateResizeConstraint('maxHeight', resizeHeightInput);
   });
 
   filenameInput.addEventListener('input', () => {
@@ -392,6 +454,8 @@ async function updateConversion(cardData) {
     imageElement,
     slider,
     scaleSlider,
+    maxWidth,
+    maxHeight,
     convertedSize,
     newDim,
     downloadBtn,
@@ -413,10 +477,13 @@ async function updateConversion(cardData) {
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
   const quality = clamp(qualityPercent / 100, 0.01, 1);
   const scalePercent = clamp(Number(scaleSlider.value) || 100, 10, 100);
-  const scaleFactor = scalePercent / 100;
-
-  const newWidth = Math.round(imageElement.naturalWidth * scaleFactor);
-  const newHeight = Math.round(imageElement.naturalHeight * scaleFactor);
+  const { width: newWidth, height: newHeight } = computeResizedDimensions(
+    imageElement.naturalWidth,
+    imageElement.naturalHeight,
+    scalePercent,
+    maxWidth,
+    maxHeight,
+  );
 
   const sourceCanvas = document.createElement('canvas');
   sourceCanvas.width = Math.max(newWidth, 1);
