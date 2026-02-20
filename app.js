@@ -270,6 +270,7 @@ function createCard(file, dataUrl) {
   const backgroundToleranceValue = card.querySelector('.background-tolerance-value');
   const cropToggleBtn = card.querySelector('.crop-toggle-btn');
   const cropResetBtn = card.querySelector('.crop-reset-btn');
+  const cropApplyBtn = card.querySelector('.crop-apply-btn');
 
   const baseName = getFileBaseName(file.name);
   const radioGroupName = `percentPreset_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
@@ -318,6 +319,7 @@ function createCard(file, dataUrl) {
     cropSelection,
     cropToggleBtn,
     cropResetBtn,
+    cropApplyBtn,
     baseName,
     imageElement: new Image(),
     originalWidth: 0,
@@ -337,6 +339,8 @@ function createCard(file, dataUrl) {
     cropEnabled: false,
     cropRect: { x: 0, y: 0, width: 1, height: 1 },
     cropPointerSession: null,
+    skipAutoUpdateOnImageLoad: false,
+    renderCropSelection: null,
   };
 
   thumbnail.src = dataUrl;
@@ -346,6 +350,12 @@ function createCard(file, dataUrl) {
     cardData.originalWidth = cardData.imageElement.naturalWidth;
     cardData.originalHeight = cardData.imageElement.naturalHeight;
     originalDim.textContent = `${cardData.originalWidth} × ${cardData.originalHeight} px`;
+
+    if (cardData.skipAutoUpdateOnImageLoad) {
+      cardData.skipAutoUpdateOnImageLoad = false;
+      return;
+    }
+
     updateConversion(cardData);
   });
   cardData.imageElement.src = dataUrl;
@@ -369,13 +379,18 @@ function createCard(file, dataUrl) {
       cardData.cropToggleBtn.setAttribute('aria-pressed', String(enabled));
       cardData.cropToggleBtn.textContent = enabled ? 'Désactiver le recadrage' : 'Activer le recadrage';
     }
+    if (cardData.cropApplyBtn) {
+      cardData.cropApplyBtn.disabled = !enabled;
+    }
     if (cardData.cropOverlay) {
       cardData.cropOverlay.classList.toggle('is-visible', enabled);
     }
     if (cardData.cropStage) {
       cardData.cropStage.classList.toggle('is-active', enabled);
     }
-    debounceUpdate(cardData);
+    if (!enabled) {
+      debounceUpdate(cardData);
+    }
   };
 
   const resetCrop = () => {
@@ -425,7 +440,6 @@ function createCard(file, dataUrl) {
     cardData.cropPointerSession = null;
     window.removeEventListener('pointermove', updateCropFromPointer);
     window.removeEventListener('pointerup', stopCropDrag);
-    debounceUpdate(cardData);
   };
 
   if (cropStage) {
@@ -458,7 +472,17 @@ function createCard(file, dataUrl) {
     });
   }
 
+  if (cropApplyBtn) {
+    cropApplyBtn.addEventListener('click', () => {
+      if (!cardData.cropEnabled) {
+        return;
+      }
+      debounceUpdate(cardData);
+    });
+  }
+
   cardData.thumbnail = thumbnail;
+  cardData.renderCropSelection = renderCropSelection;
   renderCropSelection();
 
   slider.addEventListener('input', () => {
@@ -719,6 +743,14 @@ async function updateConversion(cardData) {
   const sizeInBytes = getDataUrlSize(dataUrl);
 
   card.querySelector('.card__thumbnail').src = dataUrl;
+
+  if (cropEnabled) {
+    cardData.cropRect = { x: 0, y: 0, width: 1, height: 1 };
+    cardData.renderCropSelection?.();
+    cardData.skipAutoUpdateOnImageLoad = true;
+    cardData.imageElement.src = dataUrl;
+  }
+
   newDim.textContent = `${newWidth} × ${newHeight} px`;
   convertedSize.textContent = formatBytes(sizeInBytes);
   downloadBtn.dataset.url = dataUrl;

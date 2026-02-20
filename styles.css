@@ -292,6 +292,7 @@ main {
   padding: 1.25rem;
   display: grid;
   place-items: center;
+  gap: 0.75rem;
 }
 
 .card__thumbnail {
@@ -310,7 +311,8 @@ main {
 
 .crop-stage {
   position: relative;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   display: grid;
   place-items: center;
 }
@@ -339,10 +341,46 @@ main {
   border: 2px solid #fff;
   box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.35);
   border-radius: 10px;
+  overflow: hidden;
   left: 0;
   top: 0;
   width: 0;
   height: 0;
+}
+
+.crop-selection::before,
+.crop-selection::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.crop-selection::before {
+  background:
+    linear-gradient(to right,
+      transparent 33.333%,
+      rgba(255, 255, 255, 0.65) 33.333%,
+      rgba(255, 255, 255, 0.65) calc(33.333% + 1px),
+      transparent calc(33.333% + 1px),
+      transparent 66.666%,
+      rgba(255, 255, 255, 0.65) 66.666%,
+      rgba(255, 255, 255, 0.65) calc(66.666% + 1px),
+      transparent calc(66.666% + 1px)),
+    linear-gradient(to bottom,
+      transparent 33.333%,
+      rgba(255, 255, 255, 0.65) 33.333%,
+      rgba(255, 255, 255, 0.65) calc(33.333% + 1px),
+      transparent calc(33.333% + 1px),
+      transparent 66.666%,
+      rgba(255, 255, 255, 0.65) 66.666%,
+      rgba(255, 255, 255, 0.65) calc(66.666% + 1px),
+      transparent calc(66.666% + 1px));
+}
+
+.crop-selection::after {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: inherit;
 }
 
 .crop-stage.is-active {
@@ -351,6 +389,27 @@ main {
 
 .crop-stage.is-active .card__thumbnail {
   user-select: none;
+}
+
+.crop-apply-btn {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.crop-apply-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.crop-apply-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .crop-actions {
