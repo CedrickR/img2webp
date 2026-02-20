@@ -6,7 +6,14 @@
     <title>Convertisseur d'images</title>
     <script>
       (function loadLocalAssets() {
-        const baseUrl = new URL('./', window.location.href);
+        const { origin, pathname } = window.location;
+        const looksLikeFile = /\.[^/]+$/.test(pathname);
+        const basePath = looksLikeFile
+          ? pathname.replace(/[^/]*$/, '')
+          : pathname.endsWith('/')
+            ? pathname
+            : `${pathname}/`;
+        const baseUrl = new URL(basePath, origin);
 
         const stylesheet = document.createElement('link');
         stylesheet.rel = 'stylesheet';
