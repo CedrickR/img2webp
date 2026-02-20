@@ -211,23 +211,29 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
-function computeResizedDimensions(originalWidth, originalHeight, scalePercent, maxWidth = null, maxHeight = null) {
-  const baseWidth = Math.max(Math.round(originalWidth * (scalePercent / 100)), 1);
-  const baseHeight = Math.max(Math.round(originalHeight * (scalePercent / 100)), 1);
+function getDimensionsFromPercent(originalWidth, originalHeight, percent) {
+  const ratio = clamp(percent, 1, 100) / 100;
+  return {
+    width: Math.max(1, Math.round(originalWidth * ratio)),
+    height: Math.max(1, Math.round(originalHeight * ratio)),
+  };
+}
 
-  let ratio = 1;
-  if (maxWidth) {
-    ratio = Math.min(ratio, maxWidth / baseWidth);
-  }
-  if (maxHeight) {
-    ratio = Math.min(ratio, maxHeight / baseHeight);
-  }
+function getDimensionsFromPixels(originalWidth, originalHeight, targetWidth, targetHeight, keepProportions) {
+  if (keepProportions) {
+    const widthRatio = targetWidth ? targetWidth / originalWidth : Infinity;
+    const heightRatio = targetHeight ? targetHeight / originalHeight : Infinity;
+    const ratio = Math.min(widthRatio, heightRatio, 1);
 
-  ratio = Math.min(1, ratio);
+    return {
+      width: Math.max(1, Math.round(originalWidth * ratio)),
+      height: Math.max(1, Math.round(originalHeight * ratio)),
+    };
+  }
 
   return {
-    width: Math.max(1, Math.round(baseWidth * ratio)),
-    height: Math.max(1, Math.round(baseHeight * ratio)),
+    width: Math.max(1, Math.min(targetWidth || originalWidth, originalWidth)),
+    height: Math.max(1, Math.min(targetHeight || originalHeight, originalHeight)),
   };
 }
 
@@ -239,8 +245,10 @@ function createCard(file, dataUrl) {
   const meta = card.querySelector('.card__meta');
   const slider = card.querySelector('.compression-slider');
   const compressionValue = card.querySelector('.compression-value') || card.querySelector('.slider-value');
-  const scaleSlider = card.querySelector('.scale-slider');
-  const scaleValue = card.querySelector('.scale-value');
+  const sizeTabButtons = [...card.querySelectorAll('.size-tab-btn')];
+  const sizePanels = [...card.querySelectorAll('.size-panel')];
+  const percentRadios = [...card.querySelectorAll('.percent-radio')];
+  const keepProportionsCheckbox = card.querySelector('.keep-proportions-checkbox');
   const originalSize = card.querySelector('.original-size');
   const convertedSize = card.querySelector('.converted-size');
   const originalDim = card.querySelector('.original-dimensions');
@@ -259,15 +267,16 @@ function createCard(file, dataUrl) {
   const backgroundToleranceValue = card.querySelector('.background-tolerance-value');
 
   const baseName = getFileBaseName(file.name);
+  const radioGroupName = `percentPreset_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
+  percentRadios.forEach((radio) => {
+    radio.name = radioGroupName;
+  });
 
   title.textContent = file.name;
   meta.textContent = `Format: ${(file.type || 'image/jpeg').split('/')[1]?.toUpperCase() ?? 'JPG'}`;
   originalSize.textContent = formatBytes(file.size);
   if (compressionValue) {
     compressionValue.textContent = `${slider.value}%`;
-  }
-  if (scaleValue) {
-    scaleValue.textContent = `${scaleSlider.value}%`;
   }
   if (backgroundToleranceValue) {
     backgroundToleranceValue.textContent = backgroundToleranceSlider.value;
@@ -279,8 +288,10 @@ function createCard(file, dataUrl) {
     card,
     slider,
     compressionValue,
-    scaleSlider,
-    scaleValue,
+    sizeTabButtons,
+    sizePanels,
+    percentRadios,
+    keepProportionsCheckbox,
     originalSize,
     convertedSize,
     originalDim,
@@ -308,8 +319,11 @@ function createCard(file, dataUrl) {
     backgroundColor: 'transparent',
     backgroundRemovalEnabled: false,
     backgroundTolerance: 45,
+    sizeMode: 'pixels',
+    keepProportions: true,
     maxWidth: null,
     maxHeight: null,
+    percentPreset: 75,
   };
 
   thumbnail.src = dataUrl;
@@ -330,13 +344,80 @@ function createCard(file, dataUrl) {
     debounceUpdate(cardData);
   });
 
-  scaleSlider.addEventListener('input', () => {
-    const sanitized = clamp(Number(scaleSlider.value) || 100, 10, 100);
-    scaleSlider.value = sanitized;
-    if (scaleValue) {
-      scaleValue.textContent = `${sanitized}%`;
-    }
+  const updateActiveSizeTab = (mode) => {
+    cardData.sizeMode = mode;
+    sizeTabButtons.forEach((button) => {
+      const isActive = button.dataset.sizeTab === mode;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-selected', String(isActive));
+    });
+    sizePanels.forEach((panel) => {
+      panel.classList.toggle('is-hidden', panel.dataset.sizePanel !== mode);
+    });
     debounceUpdate(cardData);
+  };
+
+  sizeTabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      updateActiveSizeTab(button.dataset.sizeTab === 'percent' ? 'percent' : 'pixels');
+    });
+  });
+
+  const updateResizeConstraint = (field, input, oppositeInput = null) => {
+    const parsed = parsePositiveInteger(input.value);
+    if (input.value.trim() === '') {
+      cardData[field] = null;
+      input.classList.remove('is-invalid');
+      debounceUpdate(cardData);
+      return;
+    }
+
+    if (!parsed) {
+      input.classList.add('is-invalid');
+      return;
+    }
+
+    cardData[field] = parsed;
+    input.value = String(parsed);
+    input.classList.remove('is-invalid');
+
+    if (cardData.keepProportions && oppositeInput && cardData.originalWidth && cardData.originalHeight) {
+      if (field === 'maxWidth') {
+        const computedHeight = Math.round((parsed / cardData.originalWidth) * cardData.originalHeight);
+        cardData.maxHeight = Math.max(1, computedHeight);
+        oppositeInput.value = String(cardData.maxHeight);
+      } else if (field === 'maxHeight') {
+        const computedWidth = Math.round((parsed / cardData.originalHeight) * cardData.originalWidth);
+        cardData.maxWidth = Math.max(1, computedWidth);
+        oppositeInput.value = String(cardData.maxWidth);
+      }
+      oppositeInput.classList.remove('is-invalid');
+    }
+
+    debounceUpdate(cardData);
+  };
+
+  resizeWidthInput.addEventListener('input', () => {
+    updateResizeConstraint('maxWidth', resizeWidthInput, resizeHeightInput);
+  });
+
+  resizeHeightInput.addEventListener('input', () => {
+    updateResizeConstraint('maxHeight', resizeHeightInput, resizeWidthInput);
+  });
+
+  keepProportionsCheckbox.addEventListener('change', () => {
+    cardData.keepProportions = keepProportionsCheckbox.checked;
+    debounceUpdate(cardData);
+  });
+
+  percentRadios.forEach((radio) => {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) {
+        return;
+      }
+      cardData.percentPreset = clamp(Number(radio.value) || 75, 1, 100);
+      debounceUpdate(cardData);
+    });
   });
 
   const updateResizeConstraint = (field, input) => {
@@ -453,9 +534,6 @@ async function updateConversion(cardData) {
   const {
     imageElement,
     slider,
-    scaleSlider,
-    maxWidth,
-    maxHeight,
     convertedSize,
     newDim,
     downloadBtn,
@@ -464,6 +542,11 @@ async function updateConversion(cardData) {
     backgroundColor,
     backgroundRemovalEnabled,
     backgroundTolerance,
+    sizeMode,
+    maxWidth,
+    maxHeight,
+    keepProportions,
+    percentPreset,
   } = cardData;
 
   if (!gallery.contains(card)) {
@@ -476,14 +559,13 @@ async function updateConversion(cardData) {
 
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
   const quality = clamp(qualityPercent / 100, 0.01, 1);
-  const scalePercent = clamp(Number(scaleSlider.value) || 100, 10, 100);
-  const { width: newWidth, height: newHeight } = computeResizedDimensions(
-    imageElement.naturalWidth,
-    imageElement.naturalHeight,
-    scalePercent,
-    maxWidth,
-    maxHeight,
-  );
+
+  const dimensions = sizeMode === 'percent'
+    ? getDimensionsFromPercent(imageElement.naturalWidth, imageElement.naturalHeight, percentPreset)
+    : getDimensionsFromPixels(imageElement.naturalWidth, imageElement.naturalHeight, maxWidth, maxHeight, keepProportions);
+
+  const newWidth = dimensions.width;
+  const newHeight = dimensions.height;
 
   const sourceCanvas = document.createElement('canvas');
   sourceCanvas.width = Math.max(newWidth, 1);
@@ -520,7 +602,7 @@ async function updateConversion(cardData) {
   downloadBtn.dataset.url = dataUrl;
   cardData.convertedDataUrl = dataUrl;
   cardData.convertedBytes = sizeInBytes;
-  updateDownloadFilename(cardData, { scalePercent, qualityPercent });
+  updateDownloadFilename(cardData, { qualityPercent });
   refreshSummary();
 }
 
@@ -543,23 +625,27 @@ function triggerDownload(cardData) {
 function updateDownloadFilename(cardData, options = {}) {
   const {
     slider,
-    scaleSlider,
     filenameInput,
     downloadBtn,
     baseName,
     outputFormatSelect,
     filenameSuffix,
+    sizeMode,
+    percentPreset,
+    maxWidth,
+    maxHeight,
   } = cardData;
-  const scalePercent = clamp(Number(scaleSlider.value) || 100, 10, 100);
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
-  const resolvedScale = options.scalePercent ?? scalePercent;
   const resolvedQuality = options.qualityPercent ?? qualityPercent;
 
   const selectedFormat = resolveOutputFormat(outputFormatSelect?.value || cardData.outputFormat);
   cardData.outputFormat = selectedFormat;
   const outputConfig = OUTPUT_FORMATS[selectedFormat];
 
-  const fallbackBase = `${baseName}_${resolvedScale}pct_${resolvedQuality}qual`;
+  const sizeToken = sizeMode === 'percent'
+    ? `${percentPreset}pct`
+    : `${maxWidth || 'auto'}x${maxHeight || 'auto'}px`;
+  const fallbackBase = `${baseName}_${sizeToken}_${resolvedQuality}qual`;
   const rawInput = filenameInput.value ?? '';
   const trimmed = rawInput.trim();
   const knownExtensions = Object.values(OUTPUT_FORMATS).map((format) => format.extension);
