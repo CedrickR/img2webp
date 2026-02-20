@@ -135,8 +135,10 @@
               </button>
             </header>
             <div class="card__controls">
-              <div class="control-group">
-                <label class="control-label" for="compression">Taux de compression</label>
+              <div class="control-group control-group--compression">
+                <label class="control-label" for="compression">
+                  <span class="control-badge">⚙️</span>Taux de compression
+                </label>
                 <div class="slider-wrapper">
                   <input
                     class="compression-slider"
@@ -148,8 +150,10 @@
                   <span class="slider-value compression-value">80&nbsp;%</span>
                 </div>
               </div>
-              <div class="control-group size-control-group">
-                <label class="control-label">Taille de l'image</label>
+              <div class="control-group control-group--size size-control-group">
+                <label class="control-label">
+                  <span class="control-badge">📐</span>Taille de l'image
+                </label>
                 <div class="size-tabs" role="tablist" aria-label="Mode de redimensionnement">
                   <button class="size-tab-btn is-active" type="button" data-size-tab="pixels" role="tab" aria-selected="true">
                     Pixels
@@ -207,8 +211,10 @@
                   </div>
                 </div>
               </div>
-              <div class="control-group">
-                <label class="control-label">Recadrage</label>
+              <div class="control-group control-group--crop">
+                <label class="control-label">
+                  <span class="control-badge">✂️</span>Recadrage
+                </label>
                 <div class="crop-actions">
                   <button class="crop-toggle-btn" type="button" aria-pressed="false">
                     Activer le recadrage
@@ -219,8 +225,10 @@
                 </div>
                 <p class="crop-help">Cliquez et glissez sur l'image pour définir le cadre.</p>
               </div>
-              <div class="control-group">
-                <label class="control-label">Fond (type bgremove)</label>
+              <div class="control-group control-group--background">
+                <label class="control-label">
+                  <span class="control-badge">🪄</span>Suppression du fond
+                </label>
                 <label class="background-remove-toggle">
                   <input
                     class="background-remove-checkbox"
@@ -262,6 +270,7 @@
               </div>
             </div>
             <dl class="card__stats">
+              <div class="stats-heading">Informations</div>
               <div class="stats-row">
                 <dt>Poids original</dt>
                 <dd class="original-size">-</dd>
@@ -301,7 +310,7 @@
                 </select>
               </label>
               <button class="btn btn--primary download-btn" type="button">
-                Télécharger en WebP
+                Valider
               </button>
             </div>
           </div>

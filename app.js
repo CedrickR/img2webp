@@ -786,7 +786,7 @@ function updateDownloadFilename(cardData, options = {}) {
     filenameSuffix.textContent = `.${outputConfig.extension}`;
   }
   if (downloadBtn) {
-    downloadBtn.textContent = `Télécharger en ${outputConfig.label}`;
+    downloadBtn.textContent = 'Valider';
   }
   cardData.currentFilename = filename;
 }
