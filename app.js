@@ -241,6 +241,9 @@ function createCard(file, dataUrl) {
   const { content } = template;
   const card = content.firstElementChild.cloneNode(true);
   const thumbnail = card.querySelector('.card__thumbnail');
+  const cropStage = card.querySelector('.crop-stage');
+  const cropOverlay = card.querySelector('.crop-overlay');
+  const cropSelection = card.querySelector('.crop-selection');
   const title = card.querySelector('.card__title');
   const meta = card.querySelector('.card__meta');
   const slider = card.querySelector('.compression-slider');
@@ -265,6 +268,8 @@ function createCard(file, dataUrl) {
   const backgroundRemoveCheckbox = card.querySelector('.background-remove-checkbox');
   const backgroundToleranceSlider = card.querySelector('.background-tolerance-slider');
   const backgroundToleranceValue = card.querySelector('.background-tolerance-value');
+  const cropToggleBtn = card.querySelector('.crop-toggle-btn');
+  const cropResetBtn = card.querySelector('.crop-reset-btn');
 
   const baseName = getFileBaseName(file.name);
   const radioGroupName = `percentPreset_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
@@ -308,6 +313,11 @@ function createCard(file, dataUrl) {
     backgroundRemoveCheckbox,
     backgroundToleranceSlider,
     backgroundToleranceValue,
+    cropStage,
+    cropOverlay,
+    cropSelection,
+    cropToggleBtn,
+    cropResetBtn,
     baseName,
     imageElement: new Image(),
     originalWidth: 0,
@@ -324,6 +334,9 @@ function createCard(file, dataUrl) {
     maxWidth: null,
     maxHeight: null,
     percentPreset: 75,
+    cropEnabled: false,
+    cropRect: { x: 0, y: 0, width: 1, height: 1 },
+    cropPointerSession: null,
   };
 
   thumbnail.src = dataUrl;
@@ -336,6 +349,117 @@ function createCard(file, dataUrl) {
     updateConversion(cardData);
   });
   cardData.imageElement.src = dataUrl;
+
+
+  const renderCropSelection = () => {
+    if (!cardData.cropSelection) {
+      return;
+    }
+    const rect = cardData.cropRect || { x: 0, y: 0, width: 1, height: 1 };
+    cardData.cropSelection.style.left = `${rect.x * 100}%`;
+    cardData.cropSelection.style.top = `${rect.y * 100}%`;
+    cardData.cropSelection.style.width = `${rect.width * 100}%`;
+    cardData.cropSelection.style.height = `${rect.height * 100}%`;
+  };
+
+  const setCropEnabled = (enabled) => {
+    cardData.cropEnabled = enabled;
+    if (cardData.cropToggleBtn) {
+      cardData.cropToggleBtn.classList.toggle('is-active', enabled);
+      cardData.cropToggleBtn.setAttribute('aria-pressed', String(enabled));
+      cardData.cropToggleBtn.textContent = enabled ? 'Désactiver le recadrage' : 'Activer le recadrage';
+    }
+    if (cardData.cropOverlay) {
+      cardData.cropOverlay.classList.toggle('is-visible', enabled);
+    }
+    if (cardData.cropStage) {
+      cardData.cropStage.classList.toggle('is-active', enabled);
+    }
+    debounceUpdate(cardData);
+  };
+
+  const resetCrop = () => {
+    cardData.cropRect = { x: 0, y: 0, width: 1, height: 1 };
+    renderCropSelection();
+    debounceUpdate(cardData);
+  };
+
+  const toNormalizedPoint = (event) => {
+    const imgRect = cardData.thumbnail.getBoundingClientRect();
+    if (!imgRect.width || !imgRect.height) {
+      return null;
+    }
+    const x = clamp((event.clientX - imgRect.left) / imgRect.width, 0, 1);
+    const y = clamp((event.clientY - imgRect.top) / imgRect.height, 0, 1);
+    return { x, y };
+  };
+
+  const updateCropFromPointer = (event) => {
+    const session = cardData.cropPointerSession;
+    if (!session) {
+      return;
+    }
+    const point = toNormalizedPoint(event);
+    if (!point) {
+      return;
+    }
+
+    const x = Math.min(session.startX, point.x);
+    const y = Math.min(session.startY, point.y);
+    const width = Math.max(Math.abs(point.x - session.startX), 0.01);
+    const height = Math.max(Math.abs(point.y - session.startY), 0.01);
+
+    cardData.cropRect = {
+      x: clamp(x, 0, 1),
+      y: clamp(y, 0, 1),
+      width: clamp(width, 0.01, 1 - x),
+      height: clamp(height, 0.01, 1 - y),
+    };
+    renderCropSelection();
+  };
+
+  const stopCropDrag = () => {
+    if (!cardData.cropPointerSession) {
+      return;
+    }
+    cardData.cropPointerSession = null;
+    window.removeEventListener('pointermove', updateCropFromPointer);
+    window.removeEventListener('pointerup', stopCropDrag);
+    debounceUpdate(cardData);
+  };
+
+  if (cropStage) {
+    cropStage.addEventListener('pointerdown', (event) => {
+      if (!cardData.cropEnabled) {
+        return;
+      }
+      const point = toNormalizedPoint(event);
+      if (!point) {
+        return;
+      }
+      event.preventDefault();
+      cardData.cropPointerSession = { startX: point.x, startY: point.y };
+      cardData.cropRect = { x: point.x, y: point.y, width: 0.01, height: 0.01 };
+      renderCropSelection();
+      window.addEventListener('pointermove', updateCropFromPointer);
+      window.addEventListener('pointerup', stopCropDrag);
+    });
+  }
+
+  if (cropToggleBtn) {
+    cropToggleBtn.addEventListener('click', () => {
+      setCropEnabled(!cardData.cropEnabled);
+    });
+  }
+
+  if (cropResetBtn) {
+    cropResetBtn.addEventListener('click', () => {
+      resetCrop();
+    });
+  }
+
+  cardData.thumbnail = thumbnail;
+  renderCropSelection();
 
   slider.addEventListener('input', () => {
     if (compressionValue) {
@@ -519,6 +643,8 @@ async function updateConversion(cardData) {
     maxHeight,
     keepProportions,
     percentPreset,
+    cropEnabled,
+    cropRect,
   } = cardData;
 
   if (!gallery.contains(card)) {
@@ -532,9 +658,23 @@ async function updateConversion(cardData) {
   const qualityPercent = clamp(Number(slider.value) || 80, 1, 100);
   const quality = clamp(qualityPercent / 100, 0.01, 1);
 
+  const workingCropRect = cropEnabled
+    ? {
+      x: clamp(cropRect?.x ?? 0, 0, 1),
+      y: clamp(cropRect?.y ?? 0, 0, 1),
+      width: clamp(cropRect?.width ?? 1, 0.01, 1),
+      height: clamp(cropRect?.height ?? 1, 0.01, 1),
+    }
+    : { x: 0, y: 0, width: 1, height: 1 };
+
+  const cropX = Math.floor(workingCropRect.x * imageElement.naturalWidth);
+  const cropY = Math.floor(workingCropRect.y * imageElement.naturalHeight);
+  const cropWidth = Math.max(1, Math.floor(workingCropRect.width * imageElement.naturalWidth));
+  const cropHeight = Math.max(1, Math.floor(workingCropRect.height * imageElement.naturalHeight));
+
   const dimensions = sizeMode === 'percent'
-    ? getDimensionsFromPercent(imageElement.naturalWidth, imageElement.naturalHeight, percentPreset)
-    : getDimensionsFromPixels(imageElement.naturalWidth, imageElement.naturalHeight, maxWidth, maxHeight, keepProportions);
+    ? getDimensionsFromPercent(cropWidth, cropHeight, percentPreset)
+    : getDimensionsFromPixels(cropWidth, cropHeight, maxWidth, maxHeight, keepProportions);
 
   const newWidth = dimensions.width;
   const newHeight = dimensions.height;
@@ -543,7 +683,17 @@ async function updateConversion(cardData) {
   sourceCanvas.width = Math.max(newWidth, 1);
   sourceCanvas.height = Math.max(newHeight, 1);
   const sourceCtx = sourceCanvas.getContext('2d');
-  sourceCtx.drawImage(imageElement, 0, 0, sourceCanvas.width, sourceCanvas.height);
+  sourceCtx.drawImage(
+    imageElement,
+    cropX,
+    cropY,
+    Math.min(cropWidth, imageElement.naturalWidth - cropX),
+    Math.min(cropHeight, imageElement.naturalHeight - cropY),
+    0,
+    0,
+    sourceCanvas.width,
+    sourceCanvas.height,
+  );
 
   let processedImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
   if (backgroundRemovalEnabled) {

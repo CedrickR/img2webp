@@ -307,6 +307,81 @@ main {
   gap: 1.25rem;
 }
 
+
+.crop-stage {
+  position: relative;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.crop-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.crop-overlay.is-visible {
+  opacity: 1;
+}
+
+.crop-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.crop-selection {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.35);
+  border-radius: 10px;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.crop-stage.is-active {
+  cursor: crosshair;
+}
+
+.crop-stage.is-active .card__thumbnail {
+  user-select: none;
+}
+
+.crop-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.crop-toggle-btn,
+.crop-reset-btn {
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.02);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crop-toggle-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.crop-help {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
 .card__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
