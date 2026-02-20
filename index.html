@@ -145,19 +145,63 @@
                   <span class="slider-value compression-value">80&nbsp;%</span>
                 </div>
               </div>
-              <div class="control-group">
-                <label class="control-label" for="scale">Réduction</label>
-                <div class="slider-wrapper">
-                  <input
-                    class="scale-slider"
-                    type="range"
-                    min="10"
-                    max="100"
-                    step="1"
-                    value="100"
-                    aria-label="Réduction en pourcentage"
-                  />
-                  <span class="slider-value scale-value">100&nbsp;%</span>
+              <div class="control-group size-control-group">
+                <label class="control-label">Taille de l'image</label>
+                <div class="size-tabs" role="tablist" aria-label="Mode de redimensionnement">
+                  <button class="size-tab-btn is-active" type="button" data-size-tab="pixels" role="tab" aria-selected="true">
+                    Pixels
+                  </button>
+                  <button class="size-tab-btn" type="button" data-size-tab="percent" role="tab" aria-selected="false">
+                    Pourcentage
+                  </button>
+                </div>
+                <div class="size-panel" data-size-panel="pixels">
+                  <div class="resize-fields">
+                    <label class="resize-field">
+                      <span>Largeur (px)</span>
+                      <input
+                        class="resize-width-input"
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                        placeholder="Auto"
+                        aria-label="Largeur en pixels"
+                      />
+                    </label>
+                    <label class="resize-field">
+                      <span>Hauteur (px)</span>
+                      <input
+                        class="resize-height-input"
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                        placeholder="Auto"
+                        aria-label="Hauteur en pixels"
+                      />
+                    </label>
+                  </div>
+                  <label class="keep-proportions-toggle">
+                    <input class="keep-proportions-checkbox" type="checkbox" checked />
+                    <span>Conserver les proportions</span>
+                  </label>
+                </div>
+                <div class="size-panel is-hidden" data-size-panel="percent">
+                  <div class="percent-options" role="radiogroup" aria-label="Réduction en pourcentage">
+                    <label class="percent-option">
+                      <input class="percent-radio" type="radio" name="percentPreset" value="25" />
+                      <span>25%</span>
+                    </label>
+                    <label class="percent-option">
+                      <input class="percent-radio" type="radio" name="percentPreset" value="50" />
+                      <span>50%</span>
+                    </label>
+                    <label class="percent-option">
+                      <input class="percent-radio" type="radio" name="percentPreset" value="75" checked />
+                      <span>75%</span>
+                    </label>
+                  </div>
                 </div>
               </div>
               <div class="control-group">
