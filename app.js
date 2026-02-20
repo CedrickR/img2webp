@@ -420,34 +420,6 @@ function createCard(file, dataUrl) {
     });
   });
 
-  const updateResizeConstraint = (field, input) => {
-    const parsed = parsePositiveInteger(input.value);
-    if (input.value.trim() === '') {
-      cardData[field] = null;
-      input.classList.remove('is-invalid');
-      debounceUpdate(cardData);
-      return;
-    }
-
-    if (parsed) {
-      cardData[field] = parsed;
-      input.value = String(parsed);
-      input.classList.remove('is-invalid');
-      debounceUpdate(cardData);
-      return;
-    }
-
-    input.classList.add('is-invalid');
-  };
-
-  resizeWidthInput.addEventListener('input', () => {
-    updateResizeConstraint('maxWidth', resizeWidthInput);
-  });
-
-  resizeHeightInput.addEventListener('input', () => {
-    updateResizeConstraint('maxHeight', resizeHeightInput);
-  });
-
   filenameInput.addEventListener('input', () => {
     updateDownloadFilename(cardData);
   });

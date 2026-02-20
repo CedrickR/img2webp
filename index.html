@@ -6,17 +6,15 @@
     <title>Convertisseur d'images</title>
     <script>
       (function loadLocalAssets() {
-        const base = window.location.href.endsWith('/')
-          ? window.location.href
-          : `${window.location.href}/`;
+        const baseUrl = new URL('./', window.location.href);
 
         const stylesheet = document.createElement('link');
         stylesheet.rel = 'stylesheet';
-        stylesheet.href = new URL('styles.css', base).toString();
+        stylesheet.href = new URL('styles.css', baseUrl).toString();
         document.head.appendChild(stylesheet);
 
         const script = document.createElement('script');
-        script.src = new URL('app.js', base).toString();
+        script.src = new URL('app.js', baseUrl).toString();
         script.defer = true;
         document.head.appendChild(script);
       })();
@@ -202,35 +200,6 @@
                       <span>75%</span>
                     </label>
                   </div>
-                </div>
-              </div>
-              <div class="control-group">
-                <label class="control-label">Redimensionner (px)</label>
-                <div class="resize-fields">
-                  <label class="resize-field">
-                    <span>Largeur max</span>
-                    <input
-                      class="resize-width-input"
-                      type="number"
-                      min="1"
-                      step="1"
-                      inputmode="numeric"
-                      placeholder="Aucune"
-                      aria-label="Largeur maximale en pixels"
-                    />
-                  </label>
-                  <label class="resize-field">
-                    <span>Hauteur max</span>
-                    <input
-                      class="resize-height-input"
-                      type="number"
-                      min="1"
-                      step="1"
-                      inputmode="numeric"
-                      placeholder="Aucune"
-                      aria-label="Hauteur maximale en pixels"
-                    />
-                  </label>
                 </div>
               </div>
               <div class="control-group">
