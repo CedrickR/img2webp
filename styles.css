@@ -292,6 +292,7 @@ main {
   padding: 1.25rem;
   display: grid;
   place-items: center;
+  gap: 0.75rem;
 }
 
 .card__thumbnail {
@@ -388,6 +389,27 @@ main {
 
 .crop-stage.is-active .card__thumbnail {
   user-select: none;
+}
+
+.crop-apply-btn {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.crop-apply-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.crop-apply-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .crop-actions {
